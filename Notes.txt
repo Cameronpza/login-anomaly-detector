@@ -1,0 +1,73 @@
+Query 1 — Weak Auth Check
+
+sql
+SELECT user_id, department, auth_type
+FROM fake_logins
+WHERE auth_type = 'basic';
+
+What it does: Shows every login that used basic username/password instead of SSO/key/token. These are the weakest, most outdated logins — a security risk because Paul mentioned companies are moving away from basic auth.
+
+
+
+
+
+
+Query 2 — Repeated Failed Logins
+
+sql
+SELECT user_id, COUNT(*) AS failed_attempts
+FROM fake_logins
+WHERE success = 'false'
+GROUP BY user_id
+HAVING COUNT(*) >= 5
+ORDER BY failed_attempts DESC;
+
+What it does: Finds users who failed to log in 5+ times, sorted worst first. Could indicate a locked-out account or someone trying to break in.
+
+
+
+
+
+
+
+Query 3 — Odd-Hour Logins
+
+sql
+SELECT user_id, department, timestamp, auth_type
+FROM fake_logins
+WHERE CAST(strftime('%H', timestamp) AS INTEGER) < 6
+   OR CAST(strftime('%H', timestamp) AS INTEGER) > 21
+ORDER BY timestamp;
+
+What it does: Finds logins that happened before 6am or after 9pm — outside normal working hours, which could indicate suspicious access.
+
+This one's a bit more advanced than the first two — don't worry if strftime feels unfamiliar, it's just SQLite's built-in way of pulling pieces out of a date/time value. You don't need to memorize the syntax, just understand what it's doing: extracting the hour and checking if it's outside normal working hours.
+
+
+
+
+Query 4 — Unusual System Access
+
+sql
+SELECT user_id, department, system_accessed, COUNT(*) AS times_accessed
+FROM fake_logins
+GROUP BY user_id, system_accessed
+ORDER BY user_id, times_accessed;
+
+What it does: Shows how many times each person accessed each system. Low counts next to a person's name (1-2 times) next to systems they don't normally use are worth flagging as unusual access.
+
+
+What to look for: scroll through and look for users who have one system with a high count (their normal one) and a different system with a count of just 1 or 2 — that low number is the "unusual access" signal. This query doesn't auto-flag it for you like the others; it gives you the raw breakdown, and you interpret it. That's actually a good thing to mention later — it shows you understand the difference between a query that filters automatically vs one you have to read and reason about.
+
+
+
+
+Setup — Installed Streamlit
+Ran pip install streamlit pandas in VS Code terminal to install the dashboard tool and its data-handling dependency.
+
+
+
+Dashboard working
+Ran python -m streamlit run app.py successfully. Full dashboard confirmed working: title, all 3 flagged tables (weak auth, repeated failures, odd hours), and the auth-type bar chart all displaying correctly.
+
+
